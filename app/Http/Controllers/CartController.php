@@ -53,7 +53,7 @@ public function store(Request $request)
                     ->firstOrFail();
 
         $valid = $request->validate([
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'sometimes|integer|min:1',
         ]);
 
         $cart->update($valid);

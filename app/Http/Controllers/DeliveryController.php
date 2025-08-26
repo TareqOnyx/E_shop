@@ -48,7 +48,7 @@ class DeliveryController extends Controller
             $delivery = Delivery::findOrFail($id);
 
         $valid = $request->validate([
-            'status' => 'required|string',
+            'status' => 'sometimes|string',
             'tracking_number' => 'nullable|string',
         ]);
 

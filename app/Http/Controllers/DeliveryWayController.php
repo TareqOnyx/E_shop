@@ -47,8 +47,8 @@ class DeliveryWayController extends Controller
             $deliveryWay = DeliveryWay::findOrFail($id);
 
         $valid = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
+            'name' => 'sometimes|string|max:255',
+            'price' => 'sometimes|numeric',
             'estimated_days' => 'required|integer',
         ]);
 
