@@ -42,8 +42,8 @@ class PaymentController extends Controller
         $payment = Payment::findOrFail($id);
 
         $valid = $request->validate([
-            'amount'         => 'required|numeric|min:0',
-            'status'         => 'string|in:pending,paid,failed',
+            'amount'         => 'sometimes|numeric|min:0',
+            'status'         => 'sometimes|string|in:pending,paid,failed',
             'transaction_id' => 'nullable|string|max:255',
         ]);
 

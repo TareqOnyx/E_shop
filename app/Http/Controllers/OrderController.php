@@ -78,7 +78,7 @@ class OrderController extends Controller
                       ->firstOrFail();
 
         $valid = $request->validate([
-            'status' => 'required|string|in:pending,confirmed,shipped,delivered,canceled'
+            'status' => 'sometimes|string|in:pending,confirmed,shipped,delivered,canceled'
         ]);
 
         $order->update($valid);

@@ -17,8 +17,8 @@ class PaymentWayController extends Controller
     public function store(Request $request)
     {
         $valid = $request->validate([
-            'name'   => 'required|string|max:255',
-            'desc'   => 'nullable|string|max:255',
+            'name'   => 'sometimes|string|max:255',
+            'desc'   => 'sometimes|string|max:255',
             'status' => 'boolean',
         ]);
 

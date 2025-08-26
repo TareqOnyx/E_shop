@@ -55,12 +55,12 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         $valid = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
+            'name'        => 'sometimes|string|max:255',
+            'description' => 'sometimes|string|max:255',
+            'price'       => 'sometimes|numeric|min:0',
+            'stock'       => 'sometimes|integer|min:0',
             'image'       => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'sometimes|exists:categories,id',
         ]);
 
         if ($request->hasFile('image')) {
