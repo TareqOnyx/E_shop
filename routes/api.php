@@ -14,40 +14,43 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AuthController;
 
-
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
 // Categories CRUD
-Route::get('/categories',[Category_Controller::class,'index']);
-Route::post('/categories',[Category_Controller::class,'store']);
-Route::get('/categories/{id}',[Category_Controller::class,'show']);
-Route::delete('/categories/{id}',[Category_Controller::class,'destroy']);
-Route::put('/categories/{id}',[Category_Controller::class,'update']);
+Route::get('/categories', [Category_Controller::class,'index']);
+Route::post('/categories', [Category_Controller::class,'store']);
+Route::get('/categories/{id}', [Category_Controller::class,'show']);
+Route::put('/categories/{id}', [Category_Controller::class,'update']);
+Route::delete('/categories/{id}', [Category_Controller::class,'destroy']);
 
 // Products CRUD
-Route::get('/products',[Product_Controller::class,'index']);
-Route::post('/products',[Product_Controller::class,'store']);
-Route::get('/products/{id}',[Product_Controller::class,'show']);
-Route::delete('/products/{id}',[Product_Controller::class,'destroy']);
-Route::put('/products/{id}',[Product_Controller::class,'update']);
+Route::get('/products', [Product_Controller::class,'index']);
+Route::post('/products', [Product_Controller::class,'store']);
+Route::get('/products/{id}', [Product_Controller::class,'show']);
+Route::put('/products/{id}', [Product_Controller::class,'update']);
+Route::delete('/products/{id}', [Product_Controller::class,'destroy']);
+
+// Product Stock Management
+Route::post('/products/{id}/reduce-stock', [Product_Controller::class, 'reduceStock']);
+Route::post('/products/{id}/increase-stock', [Product_Controller::class, 'increaseStock']);
 
 // Reviews CRUD
-Route::get('/review',[Review_Controller::class,'index']);
-Route::post('/review',[Review_Controller::class,'store']);
-Route::get('/review/{id}',[Review_Controller::class,'show']);
-Route::delete('/review/{id}',[Review_Controller::class,'destroy']);
-Route::put('/review/{id}',[Review_Controller::class,'update']);
+Route::get('/review', [Review_Controller::class,'index']);
+Route::post('/review', [Review_Controller::class,'store']);
+Route::get('/review/{id}', [Review_Controller::class,'show']);
+Route::put('/review/{id}', [Review_Controller::class,'update']);
+Route::delete('/review/{id}', [Review_Controller::class,'destroy']);
 
-//  Routes للـ PaymentWays
+// Payment Ways
 Route::get('/payment-ways', [Payment_way_Controller::class, 'index']);
 Route::post('/payment-ways', [Payment_way_Controller::class, 'store']);
 Route::get('/payment-ways/{id}', [Payment_way_Controller::class, 'show']);
 Route::put('/payment-ways/{id}', [Payment_way_Controller::class, 'update']);
 Route::delete('/payment-ways/{id}', [Payment_way_Controller::class, 'destroy']);
 
-//  Routes للـ Payments
+// Payments
 Route::get('/payments', [Payment_Controller::class, 'index']);
 Route::post('/payments', [Payment_Controller::class, 'store']);
 Route::get('/payments/{id}', [Payment_Controller::class, 'show']);
@@ -68,23 +71,23 @@ Route::get('/deliveries/{id}', [DeliveryController::class, 'show']);
 Route::put('/deliveries/{id}', [DeliveryController::class, 'update']);
 Route::delete('/deliveries/{id}', [DeliveryController::class, 'destroy']);
 
-// Routes for Cart
+// Cart
 Route::get('/carts/{userId}', [CartController::class, 'index']);
 Route::post('/carts', [CartController::class, 'store']);
 Route::put('/carts/{id}', [CartController::class, 'update']);
 Route::delete('/carts/{id}', [CartController::class, 'destroy']);
 
-// Routes for Wishlist
+// Wishlist
 Route::get('/wishlists/{userId}', [WishlistController::class, 'index']);
 Route::post('/wishlists', [WishlistController::class, 'store']);
 Route::delete('/wishlists/{id}', [WishlistController::class, 'destroy']);
 
-// Routes for Orders
+// Orders
 Route::get('/orders/{userId}', [OrderController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 
-// Auth Routes
+// Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
