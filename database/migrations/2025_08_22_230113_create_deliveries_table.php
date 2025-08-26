@@ -12,14 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('deliveries', function (Blueprint $table) {
-        $table->id();
-        $table->unsignedBigInteger('order_id'); // لاحقاً نربطه مع جدول orders
-        $table->unsignedBigInteger('delivery_way_id'); // نوع التوصيل
-        $table->string('status')->default('pending'); // حالة التوصيل (pending, shipped, delivered, canceled)
-        $table->string('tracking_number')->nullable(); // رقم التتبع إذا متوفر
-        $table->timestamps();
-      // العلاقات
-        $table->foreign('delivery_way_id')->references('id')->on('delivery_ways')->onDelete('cascade');
+            $table->id();
+            $table->unsignedBigInteger('order_id'); // مرتبط بجدول orders
+            $table->unsignedBigInteger('delivery_way_id'); // نوع التوصيل
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending'); // حالة التوصيل
+            $table->string('tracking_number')->nullable(); // رقم التتبع إذا متوفر
+            $table->timestamps();
+
+            // العلاقات
+            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            $table->foreign('delivery_way_id')->references('id')->on('delivery_ways')->onDelete('cascade');
         });
     }
 

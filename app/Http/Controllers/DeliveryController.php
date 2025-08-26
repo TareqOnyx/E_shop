@@ -12,7 +12,7 @@ class DeliveryController extends Controller
      */
     public function index()
     {
-            return Delivery::all();
+        return Delivery::all();
     }
 
     /**
@@ -20,12 +20,17 @@ class DeliveryController extends Controller
      */
     public function store(Request $request)
     {
-         $valid = $request->validate([
+        $valid = $request->validate([
             'order_id' => 'required|integer',
             'delivery_way_id' => 'required|exists:delivery_ways,id',
-            'status' => 'nullable|string',
+            'status' => 'nullable|in:pending,approved,rejected', // فقط ثلاث حالات
             'tracking_number' => 'nullable|string',
         ]);
+
+        // إذا لم يُحدد status، نجعله pending
+        if (!isset($valid['status'])) {
+            $valid['status'] = 'pending';
+        }
 
         $delivery = Delivery::create($valid);
 
@@ -37,7 +42,7 @@ class DeliveryController extends Controller
      */
     public function show(string $id)
     {
-          return Delivery::findOrFail($id);
+        return Delivery::findOrFail($id);
     }
 
     /**
@@ -45,10 +50,10 @@ class DeliveryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-            $delivery = Delivery::findOrFail($id);
+        $delivery = Delivery::findOrFail($id);
 
         $valid = $request->validate([
-            'status' => 'sometimes|string',
+            'status' => 'sometimes|in:pending,approved,rejected', // فقط ثلاث حالات
             'tracking_number' => 'nullable|string',
         ]);
 
@@ -62,7 +67,7 @@ class DeliveryController extends Controller
      */
     public function destroy(string $id)
     {
-          $delivery = Delivery::findOrFail($id);
+        $delivery = Delivery::findOrFail($id);
         $delivery->delete();
 
         return response()->json(['message' => 'تم حذف التوصيل بنجاح'], 200);
