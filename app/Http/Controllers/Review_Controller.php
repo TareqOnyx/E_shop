@@ -48,8 +48,8 @@ class Review_Controller extends Controller
         $review = Review::findOrFail($id);
 
         $valid = $request->validate([
-            'review_text' => 'required|string',
-            'rating'      => 'required|integer|min:1|max:5',
+            'review_text' => 'sometimes|string',
+            'rating'      => 'sometimes|integer|min:1|max:5',
         ]);
 
         $review->update($valid);
