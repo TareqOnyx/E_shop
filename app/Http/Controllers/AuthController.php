@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 
-class UserController extends Controller
+class AuthController extends Controller
 {
     // Sign Up
     public function signup(Request $request)
@@ -22,7 +22,7 @@ class UserController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'البيانات المدخلة غير صحيحة',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
@@ -82,18 +82,18 @@ class UserController extends Controller
     // Log Out
     public function logout(Request $request)
     {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'لم يتم العثور على المستخدم'
-            ], 401);
-        }
-
-        $user->tokens()->delete();
+        $request->user()->tokens()->delete();
 
         return response()->json([
             'message' => 'تم تسجيل الخروج بنجاح'
+        ]);
+    }
+
+    // Get Current User
+    public function me(Request $request)
+    {
+        return response()->json([
+            'user' => $request->user(),
         ]);
     }
 
@@ -106,6 +106,11 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'المستخدم غير موجود',
             ], 404);
+        }
+
+        // تحقق أن المستخدم الحالي هو نفسه أو admin (اختياري)
+        if ($request->user()->id !== (int)$user_id) {
+            return response()->json(['message' => 'غير مصرح لك'], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -136,7 +141,7 @@ class UserController extends Controller
     }
 
     // Delete Account
-    public function deleteUser($user_id)
+    public function deleteUser(Request $request, $user_id)
     {
         $user = User::find($user_id);
 
@@ -144,6 +149,11 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'المستخدم غير موجود',
             ], 404);
+        }
+
+        // تحقق أن المستخدم الحالي هو نفسه أو admin (اختياري)
+        if ($request->user()->id !== (int)$user_id) {
+            return response()->json(['message' => 'غير مصرح لك'], 403);
         }
 
         $user->delete();
