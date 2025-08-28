@@ -29,4 +29,3 @@ class Delivery extends Model
         return $this->status === 'rejected';
     }
 }
-d
