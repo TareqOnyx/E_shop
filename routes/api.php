@@ -2,11 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\http\controllers\Category_Controller;
-use App\http\controllers\Product_Controller;
-use App\http\controllers\Review_Controller;
-use App\http\controllers\Payment_way_Controller;
-use App\http\controllers\Payment_Controller;
+use App\Http\Controllers\Category_Controller;
+use App\Http\Controllers\Product_Controller;
+use App\Http\Controllers\Review_Controller;
+use App\Http\Controllers\Payment_way_Controller;
+use App\Http\Controllers\Payment_Controller;
 use App\Http\Controllers\DeliveryWayController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\CartController;
@@ -87,12 +87,16 @@ Route::get('/orders/{userId}', [OrderController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 
-// Auth
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Public routes
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'signup']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
-// Protected Routes
-Route::middleware('auth:sanctum')->group(function () {
+// Protected routes (تحتاج token)
+Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/user/{id}', [AuthController::class, 'updateUser']);
+    Route::delete('/user/{id}', [AuthController::class, 'deleteUser']);
 });
