@@ -3,85 +3,174 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
+
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
-class AuthController extends Controller
+class UserController extends Controller
 {
-    // تسجيل مستخدم جديد
-    public function register(Request $request)
+//Sign Up
+    public function signup(Request $request)
     {
-        $valid = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:6|confirmed',
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:users',
+
+            'password' => 'required|string|min:6',
+
         ]);
 
-        $user = User::create([
-            'name' => $valid['name'],
-            'email' => $valid['email'],
-            'password' => Hash::make($valid['password']),
-        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'البيانات المدخلة غير صحيحة',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+  try {
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+            // إضافة role مباشرة في جدول users
+            $user = User::create([
+                'name' => $request->name,
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم إنشاء المستخدم بنجاح',
-            'data' => [
+                'password' => Hash::make($request->password),
+
+            ]);
+
+            return response()->json([
+                'message' => 'تم تسجيل المستخدم بنجاح',
                 'user' => $user,
-                'token' => $token
-            ]
-        ], 201);
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'حدث خطأ أثناء تسجيل المستخدم.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    // تسجيل الدخول
-    public function login(Request $request)
+// LogIn
+public function login(Request $request)
     {
-        $valid = $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
+        // التحقق من صحة المدخلات
+        $validator = Validator::make($request->all(), [
+
+            'password' => 'required|string|min:6',
         ]);
-
-        $user = User::where('email', $valid['email'])->first();
-
-        if (!$user || !Hash::check($valid['password'], $user->password)) {
+        if ($validator->fails()) {
             return response()->json([
-                'success' => false,
-                'message' => 'البريد الإلكتروني أو كلمة المرور خاطئة',
+                'message' => 'البيانات المدخلة غير صحيحة',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        // البحث عن المستخدم باستخدام البريد الإلكتروني
+        $user = User::where('name', $request->name)->first();
+        // التحقق من كلمة المرور
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
             ], 401);
         }
 
+        // إنشاء التوكن
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // إرسال التوكن والدور مع الاستجابة
         return response()->json([
-            'success' => true,
             'message' => 'تم تسجيل الدخول بنجاح',
-            'data' => [
-                'user' => $user,
-                'token' => $token
-            ]
+            'token' => $token,
+            'user' => $user,        // إرسال بيانات المستخدم (اختياري)
         ], 200);
     }
 
-    // تسجيل الخروج
+//LogOut
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        try {
+            // chek tokens
+            $user = $request->user();
 
+            if (!$user) {
+                return response()->json([
+                    'message' => 'لم يتم العثور على المستخدم'
+                ], 401); // Unauthorized
+            }
+
+            // delete tokens
+            $user->tokens->each(function ($token) {
+                $token->delete();
+            });
+
+            return response()->json([
+                'message' => 'تم تسجيل الخروج بنجاح'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'حدث خطأ أثناء محاولة تسجيل الخروج',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    //update informtion user personal
+    public function updateUser(Request $request, $user_id)
+    {
+
+        // التحقق من صحة البيانات
+        $validator = Validator::make($request->all(), [
+            'name'           => 'required|string|max:255|unique:users',
+
+
+            'password'       => 'nullable|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'البيانات المدخلة غير صحيحة',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        // تجميع بيانات التحديث
+        $data = $request->only([
+            'name',
+
+
+
+        ]);
+        // إذا تم إدخال كلمة سر جديدة
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        // تحديث البيانات في جدول users
+        $user->update($data);
+
+        // إرجاع الاستجابة مع بيانات المستخدم
         return response()->json([
-            'success' => true,
-            'message' => 'تم تسجيل الخروج بنجاح'
+            'message' => 'تم تعديل بيانات المستخدم بنجاح',
+            'user'    => $user->fresh(),
         ], 200);
     }
 
-    // جلب بيانات المستخدم الحالي
-    public function me(Request $request)
+//delet account user
+    public function deleteUser($user_id)
     {
-        return response()->json([
-            'success' => true,
-            'data' => $request->user()
-        ]);
+            // Search for user
+            $user = User::find($user_id);
+
+            //verify the user's presence
+            if (!$user) {
+                return response()->json([
+                    'message' => 'المستخدم غير موجود',
+                ], 404); // Status code 404: Not Found
+            }
+
+
+            $user->delete();
+
+            return response()->json([
+                'message' => 'تم حذف المستخدم بنجاح',
+            ], 200); // Status code 200: OK
     }
 }
