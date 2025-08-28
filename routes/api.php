@@ -2,11 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\http\controllers\Category_Controller;
-use App\http\controllers\Product_Controller;
-use App\http\controllers\Review_Controller;
-use App\http\controllers\Payment_way_Controller;
-use App\http\controllers\Payment_Controller;
+use App\Http\Controllers\Category_Controller;
+use App\Http\Controllers\Product_Controller;
+use App\Http\Controllers\Review_Controller;
+use App\Http\Controllers\Payment_way_Controller;
+use App\Http\Controllers\Payment_Controller;
 use App\Http\Controllers\DeliveryWayController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\CartController;
