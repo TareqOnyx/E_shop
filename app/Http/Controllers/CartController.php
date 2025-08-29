@@ -2,82 +2,139 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use App\Models\Cart;
+use App\Models\Product;
 
 class CartController extends Controller
 {
+    // ✅ جلب عناصر السلة
     public function index()
     {
-        $carts = Cart::with('product')
-            ->where('user_id', auth()->id())
-            ->get();
+        try {
+            $carts = Cart::with('product')
+                ->where('user_id', auth()->id())
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم جلب عناصر السلة',
+                'data' => $carts
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'فشل في جلب عناصر السلة',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ✅ إضافة عنصر للسلة
+   public function store(Request $request)
+{
+    try {
+        $valid = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity'   => 'required|integer|min:1',
+        ]);
+
+        $product = Product::findOrFail($valid['product_id']);
+
+        // ✅ Check if requested quantity exceeds stock
+        if ($valid['quantity'] > $product->stock) {
+            return response()->json([
+                'error' => "الكمية المطلوبة ({$valid['quantity']}) أكبر من المخزون المتاح ({$product->stock})"
+            ], 400);
+        }
+
+        $cart = Cart::create([
+            'user_id'    => auth()->id(),
+            'product_id' => $valid['product_id'],
+            'quantity'   => $valid['quantity'],
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'تم جلب عناصر السلة',
-            'data' => $carts
-        ]);
+            'message' => 'تمت إضافة المنتج إلى السلة',
+            'data'    => $cart->load('product')
+        ], 201);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'error'   => 'خطأ في التحقق من البيانات',
+            'details' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error'   => 'فشل في إضافة العنصر للسلة',
+            'details' => $e->getMessage()
+        ], 500);
     }
-public function store(Request $request)
-{
-    // 1️⃣ التحقق من صحة البيانات
-    $valid = $request->validate([
-        'product_id' => 'required|exists:products,id',
-        'quantity' => 'required|integer|min:1',
-    ]);
-
-    // 2️⃣ جلب المنتج للتحقق من المخزون
-    $product = Product::findOrFail($valid['product_id']);
-
-    // 3️⃣ تحقق من المخزون
-    if($valid['quantity'] > $product->stock){
-        return response()->json(['error'=>'الكمية المطلوبة أكبر من المخزون'], 400);
-    }
-
-    // 4️⃣ إضافة المنتج إلى Cart
-    $cart = Cart::create([
-        'user_id' => auth()->id(),
-        'product_id' => $valid['product_id'],
-        'quantity' => $valid['quantity'],
-    ]);
-
-    // 5️⃣ إرجاع JSON
-    return response()->json($cart, 201);
 }
 
 
+    // ✅ تعديل عنصر بالسلة
     public function update(Request $request, $id)
     {
-        $cart = Cart::where('id', $id)
-                    ->where('user_id', auth()->id())
-                    ->firstOrFail();
+        try {
+            $cart = Cart::where('id', $id)
+                        ->where('user_id', auth()->id())
+                        ->firstOrFail();
 
-        $valid = $request->validate([
-            'quantity' => 'sometimes|integer|min:1',
-        ]);
+            $valid = $request->validate([
+                'quantity' => 'sometimes|integer|min:1',
+            ]);
 
-        $cart->update($valid);
+            $cart->update($valid);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تعديل الكمية',
-            'data' => $cart->load('product')
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تعديل الكمية',
+                'data' => $cart->load('product')
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'خطأ في التحقق من البيانات',
+                'details' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'العنصر غير موجود في السلة'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'فشل في تعديل العنصر',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 
+    // ✅ حذف عنصر من السلة
     public function destroy($id)
     {
-        $cart = Cart::where('id', $id)
-                    ->where('user_id', auth()->id())
-                    ->firstOrFail();
+        try {
+            $cart = Cart::where('id', $id)
+                        ->where('user_id', auth()->id())
+                        ->firstOrFail();
 
-        $cart->delete();
+            $cart->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم حذف العنصر من السلة',
-            'data' => null
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حذف العنصر من السلة',
+                'data' => null
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'العنصر غير موجود في السلة'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'فشل في حذف العنصر من السلة',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 }
-

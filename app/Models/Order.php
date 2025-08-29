@@ -9,7 +9,7 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'payment_id', 'delivery_id', 'total', 'status'];
+    protected $fillable = ['user_id', 'total', 'status'];
 
     public function user()
     {
@@ -23,11 +23,17 @@ class Order extends Model
 
     public function payment()
     {
-        return $this->belongsTo(Payment::class);
+        return $this->hasOne(Payment::class);
     }
 
     public function delivery()
     {
         return $this->belongsTo(Delivery::class);
+    }
+
+    // Optional: Auto calculate total from items
+    public function getTotalAttribute()
+    {
+        return $this->items->sum(fn($item) => $item->price * $item->quantity);
     }
 }

@@ -51,11 +51,13 @@ Route::put('/payment-ways/{id}', [Payment_way_Controller::class, 'update']);
 Route::delete('/payment-ways/{id}', [Payment_way_Controller::class, 'destroy']);
 
 // Payments
+Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
 Route::get('/payments', [Payment_Controller::class, 'index']);
 Route::post('/payments', [Payment_Controller::class, 'store']);
 Route::get('/payments/{id}', [Payment_Controller::class, 'show']);
 Route::put('/payments/{id}', [Payment_Controller::class, 'update']);
 Route::delete('/payments/{id}', [Payment_Controller::class, 'destroy']);
+});
 
 // Delivery Ways
 Route::get('/delivery-ways', [DeliveryWayController::class, 'index']);
@@ -72,20 +74,26 @@ Route::put('/deliveries/{id}', [DeliveryController::class, 'update']);
 Route::delete('/deliveries/{id}', [DeliveryController::class, 'destroy']);
 
 // Cart
-Route::get('/carts/{userId}', [CartController::class, 'index']);
+Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
+Route::get('/carts', [CartController::class, 'index']);
 Route::post('/carts', [CartController::class, 'store']);
 Route::put('/carts/{id}', [CartController::class, 'update']);
 Route::delete('/carts/{id}', [CartController::class, 'destroy']);
+});
 
 // Wishlist
+Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
 Route::get('/wishlists/{userId}', [WishlistController::class, 'index']);
 Route::post('/wishlists', [WishlistController::class, 'store']);
 Route::delete('/wishlists/{id}', [WishlistController::class, 'destroy']);
+});
 
 // Orders
+Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
 Route::get('/orders/{userId}', [OrderController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+});
 
 // Public routes
 Route::prefix('auth')->group(function () {

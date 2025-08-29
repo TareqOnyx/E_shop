@@ -21,7 +21,7 @@ class DeliveryController extends Controller
     public function store(Request $request)
     {
         $valid = $request->validate([
-            'order_id' => 'required|integer',
+            'order_id' => 'required|exists:orders,id',
             'delivery_way_id' => 'required|exists:delivery_ways,id',
             'status' => 'nullable|in:pending,approved,rejected', // فقط ثلاث حالات
             'tracking_number' => 'nullable|string',

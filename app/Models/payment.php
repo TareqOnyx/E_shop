@@ -22,4 +22,10 @@ class Payment extends Model
     {
         return $this->belongsTo(PaymentWay::class);
     }
+
+    public function order()
+{
+    return $this->belongsTo(Order::class);
+}
+
 }

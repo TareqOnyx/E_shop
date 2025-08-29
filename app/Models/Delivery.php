@@ -11,12 +11,12 @@ class Delivery extends Model
 
     protected $fillable = [
         'order_id',
-        'delivery_address',
-        'delivery_date',
-        'status'
+        'delivery_way_id',
+        'status',
+        'tracking_number'
     ];
 
-    // دوال مساعدة للتحقق من الحالة
+    // Helper methods
     public function isPending() {
         return $this->status === 'pending';
     }
@@ -27,5 +27,14 @@ class Delivery extends Model
 
     public function isRejected() {
         return $this->status === 'rejected';
+    }
+
+    // Relationships
+    public function order() {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function deliveryWay() {
+        return $this->belongsTo(DeliveryWay::class);
     }
 }

@@ -3,90 +3,141 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 
 class OrderController extends Controller
 {
+    // ✅ جلب الطلبات الخاصة بالمستخدم
     public function index()
     {
-        $orders = Order::with('items.product','payment','delivery')
-            ->where('user_id', auth()->id())
-            ->get();
+        try {
+            $orders = Order::with('items.product', 'payment', 'delivery')
+                ->where('user_id', auth()->id())
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم جلب الطلبات',
-            'data' => $orders
-        ]);
-    }
-
-    public function store(Request $request)
-{
-    // 1️⃣ التحقق من صحة البيانات
-    $valid = $request->validate([
-        'total' => 'required|numeric',
-        'payment_method' => 'required|string',
-    ]);
-
-    // 2️⃣ جلب جميع عناصر Cart للمستخدم الحالي
-    $cartItems = Cart::where('user_id', auth()->id())->get();
-    if($cartItems->isEmpty()){
-        return response()->json(['error' => 'السلة فارغة'], 400);
-    }
-
-    // 3️⃣ تحقق من المخزون لكل منتج
-    foreach($cartItems as $item){
-        if($item->quantity > $item->product->stock){
             return response()->json([
-                'error' => "المنتج {$item->product->name} لا يحتوي على الكمية المطلوبة"
-            ], 400);
+                'success' => true,
+                'message' => 'تم جلب الطلبات',
+                'data'    => $orders
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error'   => 'فشل في جلب الطلبات',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
-    // 4️⃣ إنشاء الطلب
-    $order = Order::create([
-        'user_id' => auth()->id(),
-        'total' => $valid['total'],
-        'payment_method' => $valid['payment_method'],
-        'status' => 'pending'
-    ]);
-
-    // 5️⃣ خصم المخزون لكل منتج بالـ Cart
-    foreach($cartItems as $item){
-        $product = $item->product;
-        $product->stock -= $item->quantity;
-        $product->save();
-
-        // ربط المنتج بالطلب (لو عندك جدول order_products)
-        $order->products()->attach($product->id, ['quantity' => $item->quantity]);
-    }
-
-    // 6️⃣ مسح السلة بعد الطلب
-    Cart::where('user_id', auth()->id())->delete();
-
-    // 7️⃣ إرجاع JSON
-    return response()->json($order, 201);
-}
-
-
-    public function updateStatus(Request $request, $id)
-    {
-        $order = Order::where('id', $id)
-                      ->where('user_id', auth()->id())
-                      ->firstOrFail();
-
+    // ✅ إنشاء طلب جديد
+public function store(Request $request)
+{
+    try {
         $valid = $request->validate([
-            'status' => 'sometimes|string|in:pending,confirmed,shipped,delivered,canceled'
+            'status' => 'required|string|in:pending,confirmed,shipped,delivered,canceled',
         ]);
 
-        $order->update($valid);
+        // جلب السلة للمستخدم الحالي
+        $cartItems = Cart::with('product')
+            ->where('user_id', auth()->id())
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return response()->json(['error' => 'السلة فارغة'], 400);
+        }
+
+        // تحقق من المخزون + احسب الإجمالي
+        $total = 0;
+        foreach ($cartItems as $item) {
+            if ($item->quantity > $item->product->stock) {
+                return response()->json([
+                    'error' => "المنتج {$item->product->name} لا يحتوي على الكمية المطلوبة"
+                ], 400);
+            }
+
+            $total += $item->product->price * $item->quantity;
+        }
+
+        // إنشاء الطلب مع الإجمالي المحسوب
+        $order = Order::create([
+            'user_id' => auth()->id(),
+            'total'   => $total,
+            'status'  => $valid['status'],
+        ]);
+
+        // تحديث المخزون وإنشاء OrderItem لكل عنصر
+        foreach ($cartItems as $item) {
+            $product = $item->product;
+            $product->stock -= $item->quantity;
+            $product->save();
+
+            OrderItem::create([
+                'order_id'   => $order->id,
+                'product_id' => $product->id,
+                'quantity'   => $item->quantity, // quantity from cart
+                'price'      => $product->price,
+            ]);
+        }
+
+        // مسح السلة
+        Cart::where('user_id', auth()->id())->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'تم تحديث حالة الطلب',
-            'data' => $order
-        ]);
+            'message' => 'تم إنشاء الطلب بنجاح',
+            'data'    => $order->load('items.product')
+        ], 201);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'error'   => 'خطأ في التحقق من البيانات',
+            'details' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error'   => 'فشل في إنشاء الطلب',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+    // ✅ تحديث حالة الطلب
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $order = Order::where('id', $id)
+                ->where('user_id', auth()->id())
+                ->firstOrFail();
+
+            $valid = $request->validate([
+                'status' => 'required|string|in:pending,confirmed,shipped,delivered,canceled'
+            ]);
+
+            $order->update($valid);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تحديث حالة الطلب',
+                'data'    => $order
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error'   => 'خطأ في التحقق من البيانات',
+                'details' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'الطلب غير موجود'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error'   => 'فشل في تحديث حالة الطلب',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 }
