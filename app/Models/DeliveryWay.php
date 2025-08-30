@@ -12,4 +12,9 @@ class DeliveryWay extends Model
     {
         return $this->hasMany(Delivery::class);
     }
+
+        public function Order()
+    {
+        return $this->hasMany(Order::class);
+    }
 }

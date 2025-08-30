@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
                   $table->id();
-            $table->unsignedBigInteger('user_id')->nullable(); // المستخدم
+            $table->unsignedBigInteger('user_id')->nullable(); 
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
-            $table->unsignedBigInteger('payment_way_id'); // طريقة الدفع
-            $table->decimal('amount', 10, 2); // المبلغ
-            $table->string('status')->default('pending'); // حالة الدفع
-            $table->string('transaction_id')->nullable(); // رقم العملية البنكية
+            $table->unsignedBigInteger('payment_way_id'); 
+            $table->decimal('amount', 10, 2);
+            $table->string('status')->default('pending'); 
+            $table->string('transaction_id')->nullable(); 
             $table->timestamps();
 
             // العلاقات

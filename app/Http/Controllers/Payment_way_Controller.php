@@ -28,7 +28,8 @@ class Payment_Way_Controller extends Controller
             $valid = $request->validate([
                 'name'   => 'required|string|max:40|unique:payment_ways,name',
                 'desc'   => 'required|string|max:40',
-                'status' => 'boolean',
+                'status' => 'required|boolean',
+                'tax'    => 'required|numeric|min:0',
             ]);
 
             $paymentWay = PaymentWay::create($valid);
@@ -74,7 +75,8 @@ class Payment_Way_Controller extends Controller
             $valid = $request->validate([
                 'name'   => 'required|string|max:255',
                 'desc'   => 'nullable|string|max:255',
-                'status' => 'boolean',
+                'status' => 'required|boolean',
+                'tax'    => 'required|numeric|min:0',
             ]);
 
             $paymentWay->update($valid);

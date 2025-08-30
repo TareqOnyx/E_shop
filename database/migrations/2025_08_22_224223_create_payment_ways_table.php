@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('payment_ways', function (Blueprint $table) {
            $table->id();
-            $table->string('name');     // اسم طريقة الدفع
-            $table->string('desc')->nullable(); // وصف اختياري
-            $table->boolean('status')->default(true); // مفعلة او لا
+            $table->string('name');
+            $table->string('desc')->nullable(); 
+            $table->decimal('tax', 10, 2);
+            $table->boolean('status')->default(true);
             $table->timestamps();
         });
     }

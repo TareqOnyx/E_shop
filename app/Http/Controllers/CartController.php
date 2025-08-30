@@ -9,25 +9,33 @@ use App\Models\Product;
 class CartController extends Controller
 {
     // ✅ جلب عناصر السلة
-    public function index()
-    {
-        try {
-            $carts = Cart::with('product')
-                ->where('user_id', auth()->id())
-                ->get();
+   public function index()
+{
+    try {
+        $carts = Cart::with('product')
+            ->where('user_id', auth()->id())
+            ->get();
 
+        if ($carts->isEmpty()) {
             return response()->json([
-                'success' => true,
-                'message' => 'تم جلب عناصر السلة',
-                'data' => $carts
+                'success' => false,
+                'message' => 'السلة فارغة'
             ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'فشل في جلب عناصر السلة',
-                'details' => $e->getMessage()
-            ], 500);
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم جلب عناصر السلة',
+            'data' => $carts
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'فشل في جلب عناصر السلة',
+            'details' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     // ✅ إضافة عنصر للسلة
    public function store(Request $request)

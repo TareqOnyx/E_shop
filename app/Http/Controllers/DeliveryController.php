@@ -22,8 +22,7 @@ class DeliveryController extends Controller
     {
         $valid = $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'delivery_way_id' => 'required|exists:delivery_ways,id',
-            'status' => 'nullable|in:pending,approved,rejected', // فقط ثلاث حالات
+            'status' => 'nullable|in:pending,approved,rejected', 
             'tracking_number' => 'nullable|string',
         ]);
 
@@ -53,8 +52,7 @@ class DeliveryController extends Controller
         $delivery = Delivery::findOrFail($id);
 
         $valid = $request->validate([
-            'status' => 'sometimes|in:pending,approved,rejected', // فقط ثلاث حالات
-            'tracking_number' => 'nullable|string',
+            'status' => 'sometimes|in:pending,approved,rejected', 
         ]);
 
         $delivery->update($valid);

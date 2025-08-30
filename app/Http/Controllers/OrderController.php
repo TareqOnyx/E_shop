@@ -37,6 +37,7 @@ public function store(Request $request)
     try {
         $valid = $request->validate([
             'status' => 'required|string|in:pending,confirmed,shipped,delivered,canceled',
+            'delivery_way_id' => 'required|exists:delivery_ways,id',
         ]);
 
         // جلب السلة للمستخدم الحالي
@@ -65,6 +66,7 @@ public function store(Request $request)
             'user_id' => auth()->id(),
             'total'   => $total,
             'status'  => $valid['status'],
+            'delivery_way_id'  => $valid['delivery_way_id'],
         ]);
 
         // تحديث المخزون وإنشاء OrderItem لكل عنصر
