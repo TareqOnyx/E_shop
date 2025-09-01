@@ -86,7 +86,7 @@ class DeliveryController extends Controller
 
     if ($order && isset($valid['status'])) {
         switch ($valid['status']) {
-            case 'confirmed':
+            case 'approved':
                 $order->status = 'shipping';
                 break;
             case 'rejected':
