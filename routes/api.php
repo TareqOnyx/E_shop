@@ -105,6 +105,6 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-    Route::put('/user/{id}', [AuthController::class, 'updateUser']);
-    Route::delete('/user/{id}', [AuthController::class, 'deleteUser']);
+    Route::put('/udate/{id}', [AuthController::class, 'updateUser']);
+    Route::delete('/delete/{id}', [AuthController::class, 'deleteUser']);
 });
