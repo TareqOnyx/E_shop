@@ -4,43 +4,45 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Delivery;
+use Illuminate\Support\Facades\Log;
 
 class DeliveryController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of deliveries.
      */
     public function index()
     {
-        return response()->json([
-            'success' => true,
-            'data'    => Delivery::with('order')->get()
-        ], 200);
+        return response()->json(Delivery::all(), 200);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created delivery.
      */
     public function store(Request $request)
     {
         $valid = $request->validate([
-            'order_id'        => 'required|exists:orders,id',
-            'status'          => 'nullable|in:pending,approved,confirmed,rejected,cancelled',
+            'order_id' => 'required|exists:orders,id',
+            'status' => 'nullable|in:pending,approved,rejected,cancelled',
             'tracking_number' => 'nullable|string',
         ]);
 
         // إذا لم يُحدد status، نجعله pending
-        $valid['status'] = $valid['status'] ?? 'pending';
+        if (!isset($valid['status'])) {
+            $valid['status'] = 'pending';
+        }
 
         $delivery = Delivery::create($valid);
 
-        // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل إذا الطلب ما زال pending
+        // تحديث حالة الطلب تلقائيًا عند إنشاء التوصيل
         $order = $delivery->order;
-        if ($order && $order->status === 'pending') {
+        if ($order) {
             if ($delivery->status === 'confirmed') {
                 $order->status = 'shipping';
             } else if (in_array($delivery->status, ['rejected', 'cancelled'])) {
                 $order->status = 'cancelled';
+            } else if ($delivery->status === 'pending') {
+                $order->status = 'pending';
             }
             $order->save();
         }
@@ -49,16 +51,16 @@ class DeliveryController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified delivery.
      */
     public function show(string $id)
     {
-        $delivery = Delivery::with('order')->findOrFail($id);
+        $delivery = Delivery::findOrFail($id);
         return response()->json($delivery, 200);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified delivery.
      */
     public function update(Request $request, string $id)
     {
@@ -71,24 +73,28 @@ class DeliveryController extends Controller
 
         $delivery->update($valid);
 
-        // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل إذا الطلب ما زال pending
+        // Logging لتتبع البيانات أثناء الاختبار
+        Log::info('Delivery updated', ['delivery_id' => $delivery->id, 'status' => $valid['status']]);
+
+        // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل
         $order = $delivery->order;
-
-    if ($order && isset($valid['status'])) {
-        if ($valid['status'] === 'confirmed') {
-            $order->status = 'shipping';
-        } else if (in_array($valid['status'], ['rejected', 'cancelled'])) {
-            $order->status = 'cancelled';
+        if ($order && isset($valid['status'])) {
+            if ($valid['status'] === 'confirmed') {
+                $order->status = 'shipping';
+            } else if (in_array($valid['status'], ['rejected', 'cancelled'])) {
+                $order->status = 'cancelled';
+            } else if ($valid['status'] === 'pending') {
+                $order->status = 'pending';
+            }
+            $order->save();
+            Log::info('Order status updated', ['order_id' => $order->id, 'status' => $order->status]);
         }
-        $order->save();
-    }
-
 
         return response()->json($delivery, 200);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified delivery.
      */
     public function destroy(string $id)
     {
