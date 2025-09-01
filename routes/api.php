@@ -83,14 +83,14 @@ Route::delete('/carts/{id}', [CartController::class, 'destroy']);
 
 // Wishlist
 Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
-Route::get('/wishlists/{userId}', [WishlistController::class, 'index']);
+Route::get('/wishlists', [WishlistController::class, 'index']);
 Route::post('/wishlists', [WishlistController::class, 'store']);
 Route::delete('/wishlists/{id}', [WishlistController::class, 'destroy']);
 });
 
 // Orders
 Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
-Route::get('/orders/{userId}', [OrderController::class, 'index']);
+Route::get('/orders', [OrderController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 });
