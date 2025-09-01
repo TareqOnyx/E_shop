@@ -32,66 +32,49 @@ class Payment_Controller extends Controller
     }
 
     // ✅ Create a new payment (amount comes from order total)
-  public function store(Request $request)
+ public function store(Request $request)
 {
     try {
-        // Validate necessary fields
         $valid = $request->validate([
             'payment_way_id' => 'required|exists:payment_ways,id',
-            'status'         => 'required|string|in:pending,paid,failed',
             'transaction_id' => 'nullable|string|max:255',
+            'status' => 'sometimes|in:pending,paid,failed', // يمكن إرسال الحالة، أو default pending
         ]);
 
-        // Get the authenticated user's ID
         $userId = auth()->id();
 
-        \Log::info('Creating payment for user_id: ' . $userId, $valid);
-
-        // Find the most recent order for the user that is pending or confirmed
-        $order = \App\Models\Order::where('user_id', $userId)
+        $order = Order::where('user_id', $userId)
             ->whereIn('status', ['pending', 'confirmed'])
             ->orderBy('created_at', 'desc')
             ->first();
 
         if (!$order) {
-            return response()->json([
-                'error' => 'No valid order found for the user.',
-            ], 404);
+            return response()->json(['error' => 'No valid order found.'], 404);
         }
 
-        // Find the delivery way and get the price
         $deliveryWay = \App\Models\DeliveryWay::find($order->delivery_way_id);
+        $deliveryPrice = $deliveryWay->price ?? 0;
 
-        // If delivery way doesn't exist, return an error
-        if (!$deliveryWay) {
-            return response()->json([
-                'error' => 'No delivery way found for the order.',
-            ], 404);
-        }
-
-        $deliveryPrice = $deliveryWay->price;
-
-        // Get the payment way's tax rate
         $paymentWay = \App\Models\PaymentWay::find($valid['payment_way_id']);
         $taxRate = $paymentWay ? $paymentWay->tax : 0;
 
-        // Calculate the total amount (order total + delivery price)
         $finalAmount = $order->total + $deliveryPrice;
-
-        // Apply the payment way tax as a percentage of the total amount
         $amountWithTax = $finalAmount + ($finalAmount * $taxRate / 100);
 
-        // Set the payment data
         $valid['user_id'] = $userId;
-        $valid['order_id'] = $order->id;  // Set the order_id automatically
-        $valid['amount'] = $amountWithTax; // Use the calculated amount with tax
+        $valid['order_id'] = $order->id;
+        $valid['amount'] = $amountWithTax;
+        $valid['status'] = $valid['status'] ?? 'pending'; // default pending
 
-        \Log::info('Final data to insert:', $valid);
+        $payment = Payment::create($valid);
 
-        // Create the payment
-        $payment = \App\Models\Payment::create($valid);
-
-        \Log::info('Payment created:', ['id' => $payment->id]);
+        // تحديث حالة الطلب بناءً على حالة الدفع
+        if ($payment->status === 'failed') {
+            $order->status = 'canceled';
+        } else if ($payment->status === 'paid') {
+            $order->status = 'pending';
+        }
+        $order->save();
 
         return response()->json([
             'success' => true,
@@ -100,15 +83,12 @@ class Payment_Controller extends Controller
         ], 201);
 
     } catch (\Exception $e) {
-        \Log::error('Payment creation failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
         return response()->json([
             'error'   => 'Failed to create payment',
             'details' => $e->getMessage(),
         ], 500);
     }
 }
-
-
 
 
 

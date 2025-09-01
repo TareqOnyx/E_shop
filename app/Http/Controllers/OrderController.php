@@ -38,6 +38,7 @@ public function store(Request $request)
         // Validate only delivery_way_id
         $valid = $request->validate([
             'delivery_way_id' => 'required|exists:delivery_ways,id',
+            'status'  => 'pending',
         ]);
 
         // جلب السلة للمستخدم الحالي

@@ -12,7 +12,10 @@ class DeliveryController extends Controller
      */
     public function index()
     {
-        return Delivery::all();
+        return response()->json([
+            'success' => true,
+            'data'    => Delivery::with('order')->get()
+        ], 200);
     }
 
     /**
@@ -21,17 +24,26 @@ class DeliveryController extends Controller
     public function store(Request $request)
     {
         $valid = $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'status' => 'nullable|in:pending,approved,rejected', 
+            'order_id'        => 'required|exists:orders,id',
+            'status'          => 'nullable|in:pending,approved,confirmed,rejected,cancelled',
             'tracking_number' => 'nullable|string',
         ]);
 
         // إذا لم يُحدد status، نجعله pending
-        if (!isset($valid['status'])) {
-            $valid['status'] = 'pending';
-        }
+        $valid['status'] = $valid['status'] ?? 'pending';
 
         $delivery = Delivery::create($valid);
+
+        // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل إذا الطلب ما زال pending
+        $order = $delivery->order;
+        if ($order && $order->status === 'pending') {
+            if ($delivery->status === 'confirmed') {
+                $order->status = 'shipping';
+            } else if (in_array($delivery->status, ['rejected', 'cancelled'])) {
+                $order->status = 'cancelled';
+            }
+            $order->save();
+        }
 
         return response()->json($delivery, 201);
     }
@@ -41,7 +53,8 @@ class DeliveryController extends Controller
      */
     public function show(string $id)
     {
-        return Delivery::findOrFail($id);
+        $delivery = Delivery::with('order')->findOrFail($id);
+        return response()->json($delivery, 200);
     }
 
     /**
@@ -52,10 +65,22 @@ class DeliveryController extends Controller
         $delivery = Delivery::findOrFail($id);
 
         $valid = $request->validate([
-            'status' => 'sometimes|in:pending,approved,rejected', 
+            'status' => 'sometimes|in:pending,approved,confirmed,rejected,cancelled',
+            'tracking_number' => 'sometimes|string',
         ]);
 
         $delivery->update($valid);
+
+        // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل إذا الطلب ما زال pending
+        $order = $delivery->order;
+        if ($order && $order->status === 'pending' && isset($valid['status'])) {
+            if ($valid['status'] === 'confirmed') {
+                $order->status = 'shipping';
+            } else if (in_array($valid['status'], ['rejected', 'cancelled'])) {
+                $order->status = 'cancelled';
+            }
+            $order->save();
+        }
 
         return response()->json($delivery, 200);
     }
