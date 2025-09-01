@@ -73,14 +73,16 @@ class DeliveryController extends Controller
 
         // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل إذا الطلب ما زال pending
         $order = $delivery->order;
-        if ($order && $order->status === 'pending' && isset($valid['status'])) {
-            if ($valid['status'] === 'confirmed') {
-                $order->status = 'shipping';
-            } else if (in_array($valid['status'], ['rejected', 'cancelled'])) {
-                $order->status = 'cancelled';
-            }
-            $order->save();
+
+    if ($order && isset($valid['status'])) {
+        if ($valid['status'] === 'confirmed') {
+            $order->status = 'shipping';
+        } else if (in_array($valid['status'], ['rejected', 'cancelled'])) {
+            $order->status = 'cancelled';
         }
+        $order->save();
+    }
+
 
         return response()->json($delivery, 200);
     }
