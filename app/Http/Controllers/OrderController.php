@@ -35,8 +35,8 @@ class OrderController extends Controller
 public function store(Request $request)
 {
     try {
+        // Validate only delivery_way_id
         $valid = $request->validate([
-            'status' => 'required|string|in:pending,confirmed,shipped,delivered,canceled',
             'delivery_way_id' => 'required|exists:delivery_ways,id',
         ]);
 
@@ -57,16 +57,15 @@ public function store(Request $request)
                     'error' => "المنتج {$item->product->name} لا يحتوي على الكمية المطلوبة"
                 ], 400);
             }
-
             $total += $item->product->price * $item->quantity;
         }
 
-        // إنشاء الطلب مع الإجمالي المحسوب
+        // إنشاء الطلب مع status تلقائي pending
         $order = Order::create([
             'user_id' => auth()->id(),
             'total'   => $total,
-            'status'  => $valid['status'],
-            'delivery_way_id'  => $valid['delivery_way_id'],
+            'status'  => 'pending',
+            'delivery_way_id' => $valid['delivery_way_id'],
         ]);
 
         // تحديث المخزون وإنشاء OrderItem لكل عنصر
@@ -78,7 +77,7 @@ public function store(Request $request)
             OrderItem::create([
                 'order_id'   => $order->id,
                 'product_id' => $product->id,
-                'quantity'   => $item->quantity, // quantity from cart
+                'quantity'   => $item->quantity,
                 'price'      => $product->price,
             ]);
         }
@@ -92,7 +91,7 @@ public function store(Request $request)
             'data'    => $order->load('items.product')
         ], 201);
 
-    } catch (ValidationException $e) {
+    } catch (\Illuminate\Validation\ValidationException $e) {
         return response()->json([
             'error'   => 'خطأ في التحقق من البيانات',
             'details' => $e->errors()
@@ -104,6 +103,7 @@ public function store(Request $request)
         ], 500);
     }
 }
+
 
 
     // ✅ تحديث حالة الطلب

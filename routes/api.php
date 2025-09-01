@@ -97,7 +97,7 @@ Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 
 // Public routes
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'signup']);
+    Route::post('/signup', [AuthController::class, 'signup']);
     Route::post('/login', [AuthController::class, 'login']);
 });
 
