@@ -63,35 +63,52 @@ class DeliveryController extends Controller
      * Update the specified delivery.
      */
     public function update(Request $request, string $id)
-    {
-        $delivery = Delivery::findOrFail($id);
+{
+    $delivery = Delivery::findOrFail($id);
 
-        $valid = $request->validate([
-            'status' => 'sometimes|in:pending,approved,confirmed,rejected,cancelled',
-            'tracking_number' => 'sometimes|string',
-        ]);
+    $valid = $request->validate([
+        'status' => 'sometimes|in:pending,approved,confirmed,rejected,cancelled',
+        'tracking_number' => 'sometimes|string',
+    ]);
 
-        $delivery->update($valid);
+    // تحديث التوصيل أولاً
+    $delivery->update($valid);
 
-        // Logging لتتبع البيانات أثناء الاختبار
-        Log::info('Delivery updated', ['delivery_id' => $delivery->id, 'status' => $valid['status']]);
+    // جلب الطلب المرتبط
+    $order = $delivery->order;
 
-        // تحديث حالة الطلب المرتبط بناءً على حالة التوصيل
-        $order = $delivery->order;
-        if ($order && isset($valid['status'])) {
-            if ($valid['status'] === 'confirmed') {
+    Log::info('Delivery update attempt', [
+        'delivery_id' => $delivery->id,
+        'delivery_status' => $valid['status'],
+        'order_id' => $order?->id,
+        'order_status_before' => $order?->status
+    ]);
+
+    if ($order && isset($valid['status'])) {
+        switch ($valid['status']) {
+            case 'confirmed':
                 $order->status = 'shipping';
-            } else if (in_array($valid['status'], ['rejected', 'cancelled'])) {
+                break;
+            case 'rejected':
+            case 'cancelled':
                 $order->status = 'cancelled';
-            } else if ($valid['status'] === 'pending') {
+                break;
+            case 'pending':
                 $order->status = 'pending';
-            }
-            $order->save();
-            Log::info('Order status updated', ['order_id' => $order->id, 'status' => $order->status]);
+                break;
+            // يمكنك إضافة approved إذا تريد تحديث الطلب حسب هذا
         }
+        $order->save();
 
-        return response()->json($delivery, 200);
+        Log::info('Order status updated', [
+            'order_id' => $order->id,
+            'order_status_after' => $order->status
+        ]);
     }
+
+    return response()->json($delivery, 200);
+}
+
 
     /**
      * Remove the specified delivery.
